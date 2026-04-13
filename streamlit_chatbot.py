@@ -1,11 +1,10 @@
 """
 Streamlit Web App for AI Chatbot
-Powered by Groq — API key managed via Streamlit Secrets (never exposed to users)
+Supports Groq, Claude (Anthropic), OpenAI, and Google Gemini
+Users supply their own API key — no secrets required.
 """
 
 import streamlit as st
-from groq import Groq
-import os
 
 st.set_page_config(
     page_title="AI Chatbot",
@@ -22,42 +21,49 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Load API key from Streamlit Secrets ────────────────────────────────────────
-def get_groq_client():
-    try:
-        api_key = st.secrets["GROQ_API_KEY"]
-    except (KeyError, FileNotFoundError):
-        api_key = os.environ.get("GROQ_API_KEY", "")
+LLM_PROVIDERS = ["Groq", "Claude", "OpenAI", "Google"]
 
-    if not api_key:
-        st.error(
-            "⚠️ Groq API key not found. "
-            "Add `GROQ_API_KEY` to `.streamlit/secrets.toml` or Streamlit Cloud secrets."
-        )
-        st.stop()
-
-    return Groq(api_key=api_key)
+DEFAULT_MODELS = {
+    "Groq":   "llama-3.3-70b-versatile",
+    "Claude": "claude-sonnet-4-6",
+    "OpenAI": "gpt-4o",
+    "Google": "gemini-1.5-pro",
+}
 
 # ── Session state ──────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "client" not in st.session_state:
-    st.session_state.client = get_groq_client()
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
+
+if "llm_provider" not in st.session_state:
+    st.session_state.llm_provider = "Groq"
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("⚙️ Configuration")
 
-    st.subheader("🤖 Model")
-    model = st.selectbox(
-        "Choose a model",
-        [
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
-        ],
-        help="All models run free on Groq's LPU inference engine.",
+    st.subheader("🤖 LLM Provider")
+    llm_provider = st.selectbox(
+        "Choose a provider",
+        LLM_PROVIDERS,
+        index=LLM_PROVIDERS.index(st.session_state.llm_provider),
     )
+
+    # Reset API key when provider changes
+    if llm_provider != st.session_state.llm_provider:
+        st.session_state.llm_provider = llm_provider
+        st.session_state.api_key = ""
+        st.rerun()
+
+    api_key = st.text_input(
+        f"{llm_provider} API Key",
+        type="password",
+        placeholder=f"Enter your {llm_provider} API key...",
+        value=st.session_state.api_key,
+    )
+    st.session_state.api_key = api_key
 
     st.subheader("📝 System Prompt")
     use_system_prompt = st.checkbox("Use custom system prompt")
@@ -83,66 +89,136 @@ with st.sidebar:
 
     with st.expander("ℹ️ How to Use"):
         st.markdown("""
-        Just **start typing** — no API key needed here!
+        1. Select your **LLM provider** from the dropdown.
+        2. Paste your **API key** for that provider.
+        3. Start chatting!
 
-        The key is securely stored in Streamlit Secrets by the app owner.
-
-        **Model guide:**
-        | Model | Best for |
+        **Default models used:**
+        | Provider | Model |
         |---|---|
-        | llama-3.3-70b | Most capable |
-        | llama-3.1-8b | Fastest replies |
-        | mixtral-8x7b | Long contexts |
-        | gemma2-9b | Balanced |
+        | Groq | llama-3.3-70b-versatile |
+        | Claude | claude-sonnet-4-6 |
+        | OpenAI | gpt-4o |
+        | Google | gemini-1.5-pro |
         """)
 
-    with st.expander("🔒 Security Note"):
-        st.markdown("""
-        Your API key is **never shown** in this UI.
-        It lives in Streamlit Secrets — server-side only.
-
-        [Learn more](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
-        """)
-
-    with st.expander("🔗 Links"):
+    with st.expander("🔗 Get API Keys"):
         st.markdown("""
         - [Groq Console (free)](https://console.groq.com/)
-        - [Streamlit Secrets Docs](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
+        - [Anthropic Console](https://console.anthropic.com/)
+        - [OpenAI Platform](https://platform.openai.com/)
+        - [Google AI Studio](https://aistudio.google.com/)
         """)
+
+
+# ── Streaming response generator ───────────────────────────────────────────────
+def stream_response(provider, api_key, messages, sys_prompt, temperature, max_tokens):
+    model = DEFAULT_MODELS[provider]
+
+    if provider == "Groq":
+        from groq import Groq
+        client = Groq(api_key=api_key)
+        api_messages = (
+            [{"role": "system", "content": sys_prompt}] + messages
+            if sys_prompt else messages
+        )
+        stream = client.chat.completions.create(
+            model=model,
+            messages=api_messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+        for chunk in stream:
+            yield chunk.choices[0].delta.content or ""
+
+    elif provider == "Claude":
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        kwargs = dict(
+            model=model,
+            max_tokens=max_tokens,
+            messages=messages,
+            temperature=temperature,
+        )
+        if sys_prompt:
+            kwargs["system"] = sys_prompt
+        with client.messages.stream(**kwargs) as stream:
+            for text in stream.text_stream:
+                yield text
+
+    elif provider == "OpenAI":
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        api_messages = (
+            [{"role": "system", "content": sys_prompt}] + messages
+            if sys_prompt else messages
+        )
+        stream = client.chat.completions.create(
+            model=model,
+            messages=api_messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+        for chunk in stream:
+            yield chunk.choices[0].delta.content or ""
+
+    elif provider == "Google":
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        gen_model = genai.GenerativeModel(
+            model_name=model,
+            system_instruction=sys_prompt if sys_prompt else None,
+        )
+        history = [
+            {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
+            for m in messages[:-1]
+        ]
+        chat = gen_model.start_chat(history=history)
+        response = chat.send_message(
+            messages[-1]["content"],
+            generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+            ),
+            stream=True,
+        )
+        for chunk in response:
+            yield chunk.text
+
 
 # ── Main chat interface ────────────────────────────────────────────────────────
 st.title("🤖 AI Chatbot")
-st.caption("Powered by Groq's Lightning-Fast Inference · Free to use")
+st.caption(f"Powered by {st.session_state.llm_provider} · Enter your API key in the sidebar to start")
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 if prompt := st.chat_input("Type your message here..."):
+    if not st.session_state.api_key.strip():
+        st.warning(f"Please enter your {st.session_state.llm_provider} API key in the sidebar to continue.")
+        st.stop()
+
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    api_messages = st.session_state.messages.copy()
+    sys_prompt = system_prompt.strip() if use_system_prompt and system_prompt.strip() else ""
 
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
         try:
-            stream = st.session_state.client.chat.completions.create(
-                model=model,
-                messages=(
-                    [{"role": "system", "content": system_prompt}] + api_messages
-                    if use_system_prompt and system_prompt.strip()
-                    else api_messages
-                ),
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,
-            )
-
-            for chunk in stream:
-                delta = chunk.choices[0].delta.content or ""
+            for delta in stream_response(
+                st.session_state.llm_provider,
+                st.session_state.api_key,
+                st.session_state.messages,
+                sys_prompt,
+                temperature,
+                max_tokens,
+            ):
                 full_response += delta
                 placeholder.markdown(full_response + "▌")
 
@@ -156,4 +232,4 @@ if prompt := st.chat_input("Type your message here..."):
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 st.divider()
-st.caption("Built with Streamlit & Groq API · Responses stream in real-time")
+st.caption("Built with Streamlit · Supports Groq, Claude, OpenAI & Google Gemini")
