@@ -4,6 +4,7 @@ Supports Groq, Claude (Anthropic), OpenAI, and Google Gemini
 Users supply their own API key — no secrets required.
 """
 
+import html as html_lib
 import streamlit as st
 
 st.set_page_config(
@@ -20,46 +21,56 @@ st.markdown("""
 
     /* ── Chat bubble layout ─────────────────────────────────────── */
 
+    /* Assistant row: strip card chrome */
     [data-testid="stChatMessage"] {
         background: none !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 0.3rem 1rem;
+        padding: 0.2rem 0;
         align-items: flex-end;
-        gap: 0.6rem;
     }
 
-    /* USER → flip row so bubble + avatar sit on the RIGHT */
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-        flex-direction: row-reverse;
-    }
-
-    /* Prevent both bubbles from stretching to fill the row */
+    /* Assistant bubble */
     [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
-        flex: 0 1 auto !important;
-        width: fit-content !important;
-        max-width: 65%;
-    }
-
-    /* USER bubble — blue, tail bottom-right */
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
-        background: #0078FF;
-        border-radius: 18px 18px 4px 18px;
-        padding: 0.6rem 1rem;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] *  {
-        color: #ffffff !important;
-        margin-bottom: 0 !important;
-    }
-
-    /* ASSISTANT bubble — dark, tail bottom-left */
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
         background: #1e2130;
         border-radius: 18px 18px 18px 4px;
-        padding: 0.6rem 1rem;
+        padding: 0.65rem 1rem;
+        max-width: 65%;
+        width: fit-content;
     }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] p {
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p {
         margin-bottom: 0 !important;
+    }
+
+    /* User bubble wrapper */
+    .user-bubble-row {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+        gap: 10px;
+        margin: 4px 0;
+    }
+    .user-bubble {
+        background: #0078FF;
+        color: #ffffff;
+        padding: 10px 15px;
+        border-radius: 18px 18px 4px 18px;
+        max-width: 65%;
+        word-wrap: break-word;
+        font-size: 1rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e05a2b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -83,6 +94,18 @@ if "api_key" not in st.session_state:
 if "llm_provider" not in st.session_state:
     st.session_state.llm_provider = "Groq"
 
+# ── Helpers ────────────────────────────────────────────────────────────────────
+def user_bubble(content: str):
+    """Render a right-aligned user message bubble."""
+    escaped = html_lib.escape(content)
+    st.markdown(
+        f'<div class="user-bubble-row">'
+        f'  <div class="user-bubble">{escaped}</div>'
+        f'  <div class="user-avatar">🧑</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("⚙️ Configuration")
@@ -94,7 +117,6 @@ with st.sidebar:
         index=LLM_PROVIDERS.index(st.session_state.llm_provider),
     )
 
-    # Reset API key when provider changes
     if llm_provider != st.session_state.llm_provider:
         st.session_state.llm_provider = llm_provider
         st.session_state.api_key = ""
@@ -235,18 +257,22 @@ def stream_response(provider, api_key, messages, sys_prompt, temperature, max_to
 st.title("🤖 AI Chatbot")
 st.caption(f"Powered by {st.session_state.llm_provider} · Enter your API key in the sidebar to start")
 
+# Render conversation history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    if msg["role"] == "user":
+        user_bubble(msg["content"])
+    else:
+        with st.chat_message("assistant"):
+            st.markdown(msg["content"])
 
+# Handle new input
 if prompt := st.chat_input("Type your message here..."):
     if not st.session_state.api_key.strip():
         st.warning(f"Please enter your {st.session_state.llm_provider} API key in the sidebar to continue.")
         st.stop()
 
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    user_bubble(prompt)
 
     sys_prompt = system_prompt.strip() if use_system_prompt and system_prompt.strip() else ""
 
