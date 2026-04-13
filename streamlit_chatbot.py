@@ -27,18 +27,23 @@ st.markdown("""
         border: none !important;
         box-shadow: none !important;
         padding: 0.2rem 0;
-        align-items: flex-end;
+        align-items: flex-start;
     }
 
-    /* Assistant bubble */
+    /* Assistant bubble — left-aligned, capped width */
     [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
         background: #1e2130;
         border-radius: 18px 18px 18px 4px;
-        padding: 0.65rem 1rem;
+        padding: 0.75rem 1.1rem;
         max-width: 65%;
         width: fit-content;
+        margin-right: auto;
+        margin-bottom: 0.5rem;
     }
     [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p {
+        margin-bottom: 0.4rem !important;
+    }
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p:last-child {
         margin-bottom: 0 !important;
     }
 
