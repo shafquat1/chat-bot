@@ -31,12 +31,12 @@ st.markdown("""
     }
 
     /* USER → flip row so avatar + bubble sit on the RIGHT */
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse;
     }
 
     /* USER bubble — blue, tail bottom-right */
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] {
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
         background: #0078FF;
         border-radius: 18px 18px 4px 18px;
         padding: 0.65rem 1rem;
@@ -44,22 +44,22 @@ st.markdown("""
         margin-left: auto;
         margin-right: 0;
     }
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] p,
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] * {
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] p,
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] * {
         color: #ffffff !important;
         margin-bottom: 0;
     }
 
-    /* ASSISTANT bubble — light grey, tail bottom-left */
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stChatMessageContent"] {
-        background: #F0F2F6;
+    /* ASSISTANT bubble — subtle dark, tail bottom-left */
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
+        background: #2a2d3e;
         border-radius: 18px 18px 18px 4px;
         padding: 0.65rem 1rem;
         max-width: 70%;
         margin-right: auto;
         margin-left: 0;
     }
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stChatMessageContent"] p {
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] p {
         margin-bottom: 0;
     }
 </style>
