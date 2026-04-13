@@ -15,9 +15,53 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .stChatMessage { padding: 1rem; border-radius: 0.5rem; }
     .main { padding: 2rem; }
-    div[data-testid="stExpander"] { background-color: #f0f2f6; border-radius: 0.5rem; }
+    div[data-testid="stExpander"] { border-radius: 0.5rem; }
+
+    /* ── Chat bubble layout ─────────────────────────────────────── */
+
+    /* Strip default card styling from every message row */
+    [data-testid="stChatMessage"] {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0.25rem 1rem;
+        align-items: flex-end;
+        gap: 0.5rem;
+    }
+
+    /* USER → flip row so avatar + bubble sit on the RIGHT */
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+        flex-direction: row-reverse;
+    }
+
+    /* USER bubble — blue, tail bottom-right */
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] {
+        background: #0078FF;
+        border-radius: 18px 18px 4px 18px;
+        padding: 0.65rem 1rem;
+        max-width: 70%;
+        margin-left: auto;
+        margin-right: 0;
+    }
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] p,
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] * {
+        color: #ffffff !important;
+        margin-bottom: 0;
+    }
+
+    /* ASSISTANT bubble — light grey, tail bottom-left */
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stChatMessageContent"] {
+        background: #F0F2F6;
+        border-radius: 18px 18px 18px 4px;
+        padding: 0.65rem 1rem;
+        max-width: 70%;
+        margin-right: auto;
+        margin-left: 0;
+    }
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stChatMessageContent"] p {
+        margin-bottom: 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
