@@ -20,47 +20,46 @@ st.markdown("""
 
     /* ── Chat bubble layout ─────────────────────────────────────── */
 
-    /* Strip default card styling from every message row */
     [data-testid="stChatMessage"] {
         background: none !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 0.25rem 1rem;
+        padding: 0.3rem 1rem;
         align-items: flex-end;
-        gap: 0.5rem;
+        gap: 0.6rem;
     }
 
-    /* USER → flip row so avatar + bubble sit on the RIGHT */
+    /* USER → flip row so bubble + avatar sit on the RIGHT */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse;
+    }
+
+    /* Prevent both bubbles from stretching to fill the row */
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
+        flex: 0 1 auto !important;
+        width: fit-content !important;
+        max-width: 65%;
     }
 
     /* USER bubble — blue, tail bottom-right */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
         background: #0078FF;
         border-radius: 18px 18px 4px 18px;
-        padding: 0.65rem 1rem;
-        max-width: 70%;
-        margin-left: auto;
-        margin-right: 0;
+        padding: 0.6rem 1rem;
     }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] p,
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] * {
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] *  {
         color: #ffffff !important;
-        margin-bottom: 0;
+        margin-bottom: 0 !important;
     }
 
-    /* ASSISTANT bubble — subtle dark, tail bottom-left */
+    /* ASSISTANT bubble — dark, tail bottom-left */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
-        background: #2a2d3e;
+        background: #1e2130;
         border-radius: 18px 18px 18px 4px;
-        padding: 0.65rem 1rem;
-        max-width: 70%;
-        margin-right: auto;
-        margin-left: 0;
+        padding: 0.6rem 1rem;
     }
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] p {
-        margin-bottom: 0;
+        margin-bottom: 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
