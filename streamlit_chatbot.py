@@ -30,20 +30,29 @@ st.markdown("""
         align-items: flex-start;
     }
 
+    /* Assistant avatar — circular */
+    [data-testid="stChatMessageAvatarAssistant"] {
+        border-radius: 50% !important;
+        overflow: hidden !important;
+    }
+
     /* Assistant bubble — left-aligned, capped width */
     [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
         background: #1e2130;
         border-radius: 18px 18px 18px 4px;
-        padding: 0.75rem 1.1rem;
-        max-width: 65%;
-        width: fit-content;
-        margin-right: auto;
+        padding: 0.8rem 1.1rem !important;
+        max-width: 65% !important;
+        width: fit-content !important;
+        flex: 0 1 auto !important;
+        align-self: flex-start !important;
+        margin-left: 0 !important;
+        margin-right: auto !important;
         margin-bottom: 0.5rem;
     }
-    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p {
-        margin-bottom: 0.4rem !important;
-    }
-    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p:last-child {
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p,
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] li,
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] * {
+        margin-top: 0 !important;
         margin-bottom: 0 !important;
     }
 
